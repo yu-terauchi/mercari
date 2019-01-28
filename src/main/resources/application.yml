@@ -9,6 +9,3 @@ spring:
     url: jdbc:postgresql://localhost:5432/mercari
     username: postgres
     password: postgres
-    
-  batch.initialize-schema: always
-  batch.job.enabled: true

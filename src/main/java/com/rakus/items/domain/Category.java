@@ -10,7 +10,7 @@ public class Category {
 	/** ID */
 	private Integer id;
 	/** 親カテゴリ */
-	private Integer parent_id;
+	private Integer parentId;
 	/** カテゴリ名 */
 	private String categoryName;
 	/** 分解前データ */
@@ -19,17 +19,17 @@ public class Category {
 	public Category() {
 	}
 
-	public Category(Integer id, Integer parent_id, String categoryName, String nameAll) {
+	public Category(Integer id, Integer parentId, String categoryName, String nameAll) {
 		super();
 		this.id = id;
-		this.parent_id = parent_id;
+		this.parentId = parentId;
 		this.categoryName = categoryName;
 		this.nameAll = nameAll;
 	}
 
 	@Override
 	public String toString() {
-		return "Category [id=" + id + ", parent_id=" + parent_id + ", categoryName=" + categoryName + ", nameAll="
+		return "Category [id=" + id + ", parentId=" + parentId + ", categoryName=" + categoryName + ", nameAll="
 				+ nameAll + "]";
 	}
 
@@ -41,12 +41,12 @@ public class Category {
 		this.id = id;
 	}
 
-	public Integer getParent_id() {
-		return parent_id;
+	public Integer getParentId() {
+		return parentId;
 	}
 
-	public void setParent_id(Integer parent_id) {
-		this.parent_id = parent_id;
+	public void setParentId(Integer parentId) {
+		this.parentId = parentId;
 	}
 
 	public String getCategoryName() {
