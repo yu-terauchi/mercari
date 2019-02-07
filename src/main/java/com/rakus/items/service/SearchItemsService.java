@@ -72,15 +72,15 @@ public class SearchItemsService {
 	 * @param response　レスポンス
 	 * @return　商品一覧
 	 */
-	public List<Items> findItems(Model model, 
+	public List<Items> findItems(Model model,
 								@RequestParam(name = "name", 				required = false)	String	name,
 								@RequestParam(name = "parentCategoryId",	required = false)	Integer	parentCategoryId,
 								@RequestParam(name = "childCategoryId",		required = false)	Integer	childCategoryId,
 								@RequestParam(name = "grandsonCategoryId", 	required = false)	Integer	grandsonCategoryId,
 								@RequestParam(name = "brand", 				required = false)	String	brand, 
 								@RequestParam(name = "currentPageId", 		required = false)	Integer	currentPageId,
-								HttpServletRequest request, HttpServletResponse response) {
-		
+								HttpServletRequest request, HttpServletResponse response
+								) {
 		pageId = paging(currentPageId);
 		offSetCount = offSetCount(pageId);
 		List<Items> itemsList = null;
@@ -88,11 +88,10 @@ public class SearchItemsService {
 
 		// 空打ちで検索した場合
 		if (name.isEmpty() && parentCategoryId == 0 && brand.isEmpty()) {
-//			if(Integer.parseInt(CookieController.getCookie(request, "PageID")) >= 0) {
-				pageId = Integer.parseInt(CookieController.getCookie(request, "PageID"));
-//			}
+			pageId = Integer.parseInt(CookieController.getCookie(request, "PageID"));
 			System.out.println("空打ち検索");
 			itemsList = itemsRepository.loadPage(pageId,offSetCount);
+			
 			model.addAttribute("currentPageId", pageId);
 			return itemsList;
 		}
@@ -240,19 +239,24 @@ public class SearchItemsService {
 		if(parentCategoryId != null) {
 			itemsList = itemsRepository.findByParentCategoryId(parentCategoryId, currentPageId,offSetCount);
 			maxPage = itemsRepository.countByParentCategoryId(parentCategoryId);
+			CookieController.setCookie(request, response, "/", "ParentCategory", parentCategoryId.toString(), 1440 * 60);
 		//子カテゴリ検索
 		}else if(childCategoryId != null) {
 			itemsList = itemsRepository.findByChildCategoryId(childCategoryId, currentPageId,offSetCount);
 			maxPage = itemsRepository.countByChildCategoryId(childCategoryId);
+			CookieController.setCookie(request, response, "/", "ChildCategory", childCategoryId.toString(), 1440 * 60);
 		//孫カテゴリ検索
 		}else if(grandsonCategoryId != null) {
 			itemsList = itemsRepository.findByGrandsonCategoryId(grandsonCategoryId, currentPageId,offSetCount);
 			maxPage = itemsRepository.countByGrandsonCategoryId(grandsonCategoryId);
+			CookieController.setCookie(request, response, "/", "GrandsonCategory", grandsonCategoryId.toString(), 1440 * 60);
 		//ブランド名検索
 		}else if(brand != null) {
 			itemsList = itemsRepository.findByCompleteBrand(brand, currentPageId,offSetCount);
 			maxPage = itemsRepository.countByBrand(brand);
+			CookieController.setCookie(request, response, "/", "Brand", brand, 1440 * 60);
 		}
+		CookieController.setCookie(request, response, "/", "PageID", pageId.toString(), 1440 * 60);
 		model.addAttribute("maxPage",maxPage);
 		model.addAttribute("currentPageId", 1);
 		return itemsList;

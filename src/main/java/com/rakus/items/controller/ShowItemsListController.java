@@ -41,18 +41,21 @@ public class ShowItemsListController {
 	/**
 	 * 商品一覧画面を表示する.
 	 * 
+	 * 兼ページング機能
+	 * 
 	 * @param model モデル
 	 * @return 商品一覧画面
 	 */
 	@RequestMapping("/toItems")
 	public String toItemsList(Model model, Integer currentPageId, HttpServletRequest request,HttpServletResponse response) {
-		//cookieの値を初期化、またはcookieに保存してる検索情報をリセット(ページIDは維持)
+		//cookieの値を初期化、またはcookieに保存してる検索情報をリセット(ページIDは維持)　
 		CookieController.setCookie(request, response, "/", "PageID","1", 1440 * 60);
 		CookieController.setCookie(request, response, "/", "Name", "", 1440 * 60);
 		CookieController.setCookie(request, response, "/", "ParentCategory","0",1440 * 60);
 		CookieController.setCookie(request, response, "/", "ChildCategory","0", 1440 * 60);
 		CookieController.setCookie(request, response, "/", "GrandsonCategory", "0", 1440 * 60);
 		CookieController.setCookie(request, response, "/", "Brand", "", 1440 * 60);
+		
 		List<Items> itemsList = itemsService.loadPage(model, currentPageId,request, response);
 		//検索のカテゴリプルダウン用の各カテゴリ情報を取得
 		categoryService.loadParent(model);

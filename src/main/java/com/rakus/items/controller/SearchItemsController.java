@@ -47,13 +47,13 @@ public class SearchItemsController {
 							@RequestParam(name = "grandsonCategoryId", required = false)Integer grandsonCategoryId,
 							@RequestParam(name = "brand", required = false)String brand, 
 							@RequestParam(name = "currentPageId", required = false)Integer currentPageId,
-							HttpServletRequest request,HttpServletResponse response) {
+							HttpServletRequest request,HttpServletResponse response
+							) {
 		List<Items> itemsList = searchItemsService.findItems(model, name, parentCategoryId, childCategoryId,
 															grandsonCategoryId, brand, currentPageId, request, response);
 		categoryService.loadParent(model);
 		categoryService.loadChild(model);
 		categoryService.loadGrandson(model);
-		System.out.println("処理は来てる" + itemsList);
 		model.addAttribute("itemsList", itemsList);
 		return "itemList";
 	}
@@ -79,14 +79,10 @@ public class SearchItemsController {
 							@RequestParam(name = "grandsonCategoryId", 	required = false)	Integer grandsonCategoryId,
 							@RequestParam(name = "brand", 				required = false)	String brand, 
 							@RequestParam(name = "currentPageId", 		required = false)	Integer currentPageId,
-							HttpServletRequest request,HttpServletResponse response) {
-		List<Items> itemsList = searchItemsService.linkSearch(model, 
-															  parentCategoryId,
-															  childCategoryId,
-															  grandsonCategoryId,
-															  brand,
-															  currentPageId,
-															  request, response );
+							HttpServletRequest request,HttpServletResponse response
+							) {
+		List<Items> itemsList = searchItemsService.linkSearch(model, parentCategoryId,childCategoryId,grandsonCategoryId,
+															  brand,currentPageId,request, response);
 		categoryService.loadParent(model);
 		categoryService.loadChild(model);
 		categoryService.loadGrandson(model);

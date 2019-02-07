@@ -21,6 +21,8 @@ public class ItemsService {
 
 	@Autowired
 	private ItemsRepository itemsRepository;
+	@Autowired
+	private SearchItemsService searchItemsService;
 
 	// 最大表示件数
 	private final int MAX_COUNT = 30;
@@ -65,11 +67,19 @@ public class ItemsService {
 	 * @return 商品一覧
 	 */
 	public List<Items> loadPage(Model model, Integer currentPageId, HttpServletRequest request,HttpServletResponse response) {
+		String name = CookieController.getCookie(request, "Name");
+		Integer parentCategoryId = Integer.parseInt(CookieController.getCookie(request, "ParentCategory"));
+		Integer childCategoryId = Integer.parseInt(CookieController.getCookie(request, "ChildCategory"));
+		Integer grandsonCategoryId = Integer.parseInt(CookieController.getCookie(request, "GrandsonCategory"));
+		String brand = CookieController.getCookie(request, "Brand");
+		//cookieが初期状態ではない場合
+		if(!(name.isEmpty() && parentCategoryId == 0 && childCategoryId == 0 && grandsonCategoryId == 0 && brand.isEmpty())) {
+			return searchItemsService.findItems(model, name, parentCategoryId, childCategoryId, grandsonCategoryId, brand, currentPageId, request, response);
+		}
 		pageId = paging(currentPageId);
 		offSetCount = offSetCount(pageId);
 		List<Items> itemsList = itemsRepository.loadPage(pageId,offSetCount);
 		maxPage = itemsRepository.countPage();
-
 		// Cookie情報の設定 有効期限は1日
 		CookieController.setCookie(request, response, "/", "PageID", pageId.toString(), 1440 * 60);
 		model.addAttribute("maxPage",maxPage);
