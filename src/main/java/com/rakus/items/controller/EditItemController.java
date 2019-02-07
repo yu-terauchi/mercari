@@ -6,79 +6,61 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.rakus.items.domain.Items;
 import com.rakus.items.form.ItemsForm;
 import com.rakus.items.service.CategoryService;
 import com.rakus.items.service.ItemsService;
 
-/**
- * 商品一覧に商品を追加するコントローラ.
- * 
- * @author yu.terauchi
- *
- */
-@RequestMapping("/addItem")
-@Transactional
+@RequestMapping("/editItem")
 @Controller
-public class AddItemController {
-
+@Transactional
+public class EditItemController {
+	
+	@Autowired
+	private ItemsService itemsService;
 	@Autowired
 	private CategoryService categoryService;
-	@Autowired
-	ItemsService itemsService;
 	
-	@ModelAttribute
-	public ItemsForm setUpItemsForm() {
-		return new ItemsForm();
-	}
-	/**
-	 * 商品追加画面を表示する.
-	 * 
-	 * @param model モデル
-	 * @return 商品追加画面
-	 */
-	@RequestMapping("/toAdd")
-	public String toAdd(Model model) {
+	@RequestMapping("/toEdit")
+	public String toEdit(Model model,Integer id) {
 		categoryService.loadParent(model); 
 		categoryService.loadChild(model);
 		categoryService.loadGrandson(model);
-		return "add";
+		Items itemDetail = itemsService.findItemDetail(id);
+		model.addAttribute("itemDetail",itemDetail);
+		return "edit";
 	}
 	
-
-	@RequestMapping("/toAddItem")
-	public String toAddItem(@Validated ItemsForm itemsForm,BindingResult result,Model model) {
+	@RequestMapping("/toEditItem")
+	public String toEditItem(@Validated ItemsForm itemsForm,BindingResult result,Model model,RedirectAttributes redirectAttribute) {
 		//カテゴリの入力値チェック
 		if (itemsForm.getGrandsonCategoryId() == 0) {
 			result.rejectValue("grandsonCategoryId", null, "孫カテゴリーを選択してください");
 		}
 
 		if(result.hasErrors()) {
-			return toAdd(model);
+			return toEdit(model,itemsForm.getId());
 		}
 		//Itemsにパラメータをセット
 		Items items = new Items();
+		items.setId(itemsForm.getId());
 		items.setName(itemsForm.getName());
 		items.setPrice(Integer.parseInt(itemsForm.getPrice()));
 		//孫カテゴリに値が入っている場合のみセット
 		if(itemsForm.getGrandsonCategoryId() != 0) {
 			items.setCategoryId(itemsForm.getGrandsonCategoryId());
-//		}else {
-//			items.setCategoryId(null);
 		}
 		items.setBrand(itemsForm.getBrand());
 		items.setConditionId(itemsForm.getConditionId());
 		items.setDescription(itemsForm.getDescription());
 		
-		itemsService.addItem(items);
-		
-		String message = "1件の商品を追加しました";
-		model.addAttribute("message" ,message);
-
-		return "redirect:/addItem/toAdd";
+		itemsService.updateItem(items);
+		//リダイレクト先にidを送る(編集した商品の詳細ページに飛ぶため)
+		redirectAttribute.addAttribute("id", items.getId());
+		return "redirect:/showItemDetail/toItemDetail";
 	}
 
 }

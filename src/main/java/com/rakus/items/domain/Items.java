@@ -19,7 +19,8 @@ public class Items {
 	private String brand;
 	/** 価格 */
 	private Integer price;
-	/** よくわからん */
+	/** 商品運送状況 */ 
+	//本来shippingだが、DBもshoppingにしてしまっているので統一
 	private Integer shopping;
 	/** 説明文 */
 	private String description;

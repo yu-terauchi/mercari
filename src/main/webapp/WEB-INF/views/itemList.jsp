@@ -15,7 +15,7 @@
 		integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"/>
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
 		integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous"/>
-	<link rel="stylesheet" href="./css/mercari.css"/>
+	<link rel="stylesheet" href="/css/mercari.css"/>
 	<!-- script -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
@@ -122,12 +122,15 @@
 			<!-- ログアウト -->
 			<div>
 				<ul class="nav navbar-nav navbar-right">
-					<li><a id="logout" href="./login.html">Logout<i class="fa fa-power-off"></i>
+					<li><a id="logout" href="${pageContext.request.contextPath}/logout">Logout<i class="fa fa-power-off"></i>
 					</a></li>
 				</ul>
+				<sec:authorize access="hasRole('ROLE_MEMBER') and isAuthenticated()">
+					<sec:authentication var="userName" property="principal.user.name" />
+				</sec:authorize>&nbsp;&nbsp;
 				<!-- ログイン中のユーザ名表示 -->
 				<p class="navbar-text navbar-right">
-					<span id="loginName">user: userName</span>
+					<span id="loginName">user: <c:out value="${userName}"/></span>
 				</p>
 			</div>
 		</div>
@@ -197,6 +200,8 @@
 			<nav class="page-nav">
 				<ul class="pager">
 					<li class="previous"><a href="${pageContext.request.contextPath}/showItemsList/toItems?currentPageId=<c:out value="${currentPageId - 1}"/>">&larr; prev</a></li>
+					<!--現在のページ -->
+					<li> - <c:out value="${currentPageId}" /> - </li>
 					<li class="next"><a href="${pageContext.request.contextPath}/showItemsList/toItems?currentPageId=<c:out value="${currentPageId + 1}"/>">next &rarr;</a></li>
 				</ul>
 			</nav>
@@ -220,21 +225,18 @@
 					<tr>
 						<!-- アイテム名 -->
 						<td class="item-name">
-							<a href="${pageContext.request.contextPath}/showItemDetail/toItemDetail?id=<c:out value="${items.id}"/>&categoryId=<c:out value="${items.categoryId}"/>"><c:out value="${items.name}" /></a></td>
+							<a href="${pageContext.request.contextPath}/showItemDetail/toItemDetail?id=<c:out value="${items.id}"/>"><c:out value="${items.name}" /></a></td>
 						<!-- 価格 -->
 						<td class="item-price">$<c:out value="${items.price}" /></td>
 						<!-- 商品カテゴリ -->
 						<td class="item-category">
-<%-- 						 <c:forTokens var='val' items="${items.grandson.nameAll}" delims="/"> --%>
-<%-- 						 	<a href=""><c:out value="${val}" /></a> / --%>
-<%-- 						 </c:forTokens> --%>
-							<a href=""><c:out value="${items.parent.categoryName}" /></a> / 
-							<a href=""><c:out value="${items.child.categoryName}" /></a> / 
-							<a href=""><c:out value="${items.grandson.nameAll}" /></a>
+							<a href="${pageContext.request.contextPath}/searchItems/toLinkSearch?parentCategoryId=<c:out value="${items.parent.id}"/>&currentPageId=1"><c:out value="${items.parent.categoryName}" /></a> / 
+							<a href="${pageContext.request.contextPath}/searchItems/toLinkSearch?childCategoryId=<c:out value="${items.child.id}"/>&currentPageId=1"><c:out value="${items.child.categoryName}" /></a> / 
+							<a href="${pageContext.request.contextPath}/searchItems/toLinkSearch?grandsonCategoryId=<c:out value="${items.grandson.id}"/>&currentPageId=1"><c:out value="${items.grandson.categoryName}" /></a>
 						</td>
 						<!-- ブランド名 -->
 						<td class="item-brand">
-							<a href=""><c:out value="${items.brand}" /></a>
+							<a href="${pageContext.request.contextPath}/searchItems/toLinkSearch?brand=<c:out value="${items.brand}"/>"><c:out value="${items.brand}" /></a>
 						</td>
 						<!-- 商品状態 -->
 						<td class="item-condition"><c:out value="${items.conditionId}" /></td>
@@ -249,6 +251,8 @@
 			<nav class="page-nav">
 				<ul class="pager">
 					<li class="previous"><a href="${pageContext.request.contextPath}/showItemsList/toItems?currentPageId=<c:out value="${currentPageId - 1}"/>">&larr; prev</a></li>
+					<!--現在のページ -->
+					<li> - <c:out value="${currentPageId}" /> - </li>
 					<li class="next"><a href="${pageContext.request.contextPath}/showItemsList/toItems?currentPageId=<c:out value="${currentPageId + 1}"/>">next &rarr;</a></li>
 				</ul>
 			</nav>
@@ -260,7 +264,7 @@
 							<label></label>
 							<input type="text" name="currentPageId" class="form-control" />
 							<!-- 総ページ数 -->
-							<div class="input-group-addon">/ 20</div>
+							<div class="input-group-addon">/ <c:out value="${maxPage}" /></div>
 						</div>
 						<div class="input-group col-xs-1">
 							<button type="submit" class="btn btn-default">Go</button>

@@ -8,11 +8,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.rakus.items.controller.CookieController;
 import com.rakus.items.domain.Items;
-import com.rakus.items.form.ItemsForm;
-import com.rakus.items.repository.CategoryRepository;
 import com.rakus.items.repository.ItemsRepository;
 
 /**
@@ -24,262 +23,238 @@ import com.rakus.items.repository.ItemsRepository;
 public class SearchItemsService {
 	@Autowired
 	private ItemsRepository itemsRepository;
+	// 最大表示件数
+	private final int MAX_COUNT = 30;
+	// 表示開始の行数 〇〇行目から表示
+	private int offSetCount = 0;
+	//最大ページ数
+	private Integer maxPage = 1;
+	// デフォルトのページID
+	private Integer pageId = 1;
 
 	/**
-	 * 商品検索.
-	 * @param model モデル
-	 * @param form フォーム
-	 * @param request リクエスト
-	 * @return 商品リスト
+	 * ページIDを更新する.
+	 * 
+	 * @param currentPageId 現在ページID
+	 * @return ぺージID
 	 */
-	public List<Items> findItems(Model model,ItemsForm form,Integer currentPageId, 
-			HttpServletRequest request,HttpServletResponse response) {
-		
-		Integer pageId = 1;
+	public Integer paging(Integer currentPageId) {
 		// 現在のページIDを受け取れなかったときは1ページ目が表示される ⇒ int pageId =1;
-		if (currentPageId != null) {
+		if (currentPageId != null ) {
 			pageId = currentPageId;
-		} else {
-			currentPageId = 1;
+		}else{
+			pageId = 1;
 		}
-		// 現在のページIDが0以下になることを防ぐ
-		if (currentPageId <= 0) {
-			currentPageId = 1;
-		}
+		return pageId;
+	}
+
+	/**表示開始件数を計算する.
+	 * @param pageId ページID
+	 * @return　表示開始件数
+	 */
+	public Integer offSetCount(Integer pageId) {
+	// 2ページ目以降　表示範囲指定
+			if (pageId >= 2) {
+				offSetCount = (MAX_COUNT * pageId) - 1;
+			}
+			return offSetCount;
+	}
+	
+	/**フォーム入力の商品検索.
+	 * @param model　モデル
+	 * @param name　商品名
+	 * @param parentCategoryId　親カテゴリID
+	 * @param childCategoryId　子カテゴリID
+	 * @param grandsonCategoryId　孫カテゴリID
+	 * @param brand　ブランド名
+	 * @param currentPageId　現在のページID
+	 * @param request　リクエスト
+	 * @param response　レスポンス
+	 * @return　商品一覧
+	 */
+	public List<Items> findItems(Model model, 
+								@RequestParam(name = "name", 				required = false)	String	name,
+								@RequestParam(name = "parentCategoryId",	required = false)	Integer	parentCategoryId,
+								@RequestParam(name = "childCategoryId",		required = false)	Integer	childCategoryId,
+								@RequestParam(name = "grandsonCategoryId", 	required = false)	Integer	grandsonCategoryId,
+								@RequestParam(name = "brand", 				required = false)	String	brand, 
+								@RequestParam(name = "currentPageId", 		required = false)	Integer	currentPageId,
+								HttpServletRequest request, HttpServletResponse response) {
 		
-		String name = form.getName();
-		Integer parentCategoryId = form.getParentCategoryId();
-		Integer childCategoryId = form.getChildCategoryId();
-		Integer grandsonCategoryId = form.getGrandsonCategoryId(); 
-		String brand = form.getBrand();
-		List<Items> itemsList =  itemsRepository.load();
+		pageId = paging(currentPageId);
+		offSetCount = offSetCount(pageId);
+		List<Items> itemsList = null;
 		String message = "該当する商品がありません";
-		
+
 		// 空打ちで検索した場合
 		if (name.isEmpty() && parentCategoryId == 0 && brand.isEmpty()) {
-			pageId = Integer.parseInt(CookieController.getCookie(request, "PageID"));
+//			if(Integer.parseInt(CookieController.getCookie(request, "PageID")) >= 0) {
+				pageId = Integer.parseInt(CookieController.getCookie(request, "PageID"));
+//			}
 			System.out.println("空打ち検索");
-			itemsList = itemsRepository.loadPage(pageId);
+			itemsList = itemsRepository.loadPage(pageId,offSetCount);
+			model.addAttribute("currentPageId", pageId);
+			return itemsList;
 		}
-		//商品名のみ
-		else if(!(name.isEmpty()) && parentCategoryId == 0 && brand.isEmpty()) {
+		
+		// 商品名のみ
+		if (!(name.isEmpty()) && parentCategoryId == 0 && brand.isEmpty()) {
 			System.out.println("商品名のみの検索");
-			itemsList = itemsRepository.findByName(name,pageId);
+			itemsList = itemsRepository.findByName(name, pageId,offSetCount);
+			maxPage = itemsRepository.countByName(name);
 		}
-		//ブランド名のみ
-		else if(name.isEmpty() && parentCategoryId == 0 && !(brand.isEmpty())) {
-//			itemsList = itemsRepository.findByBrand(brand);
+		// ブランド名のみ
+		else if (name.isEmpty() && parentCategoryId == 0 && !(brand.isEmpty())) {
+			System.out.println("ブランド名のみ検索");
+			itemsList = itemsRepository.findByBrand(brand, pageId,offSetCount);
+			maxPage = itemsRepository.countByBrand(brand);
 		}
-		//商品名・ブランド名のみ
-		else if(!(name.isEmpty()) && parentCategoryId == 0 && !(brand.isEmpty())) {
-//			itemsList = itemsRepository.findByNameBrand(name,brand);
+		// 商品名・ブランド名のみ
+		else if (!(name.isEmpty()) && parentCategoryId == 0 && !(brand.isEmpty())) {
+			System.out.println("商品名・ブランド名検索");
+			itemsList = itemsRepository.findByNameBrand(name, brand, pageId,offSetCount);
+			maxPage = itemsRepository.countByNameBrand(name,brand);
 		}
-//-------------------------------------------------------------------------------------------------------
-		//親カテゴリのみ
-		else if(name.isEmpty() && parentCategoryId != 0 && brand.isEmpty()) {
-//			itemsList = itemsRepository.findByParentCategoryId(parentCategoryId);
+		// -------------------------------------------------------------------------------------------------------
+		// 孫カテゴリのみ
+		else if (name.isEmpty() && grandsonCategoryId != 0 && brand.isEmpty()) {
+			System.out.println("孫カテゴリ検索");
+			itemsList = itemsRepository.findByGrandsonCategoryId(grandsonCategoryId, pageId,offSetCount);
+			maxPage = itemsRepository.countByGrandsonCategoryId(grandsonCategoryId);
 		}
-		//子カテゴリのみ
-		else if(name.isEmpty() && childCategoryId != 0 && brand.isEmpty()) {
-//			itemsList = itemsRepository.findByChildCategoryId(childCategoryId);
+		// 子カテゴリのみ
+		else if (name.isEmpty() && childCategoryId != 0 && grandsonCategoryId == 0 && brand.isEmpty()) {
+			System.out.println("子カテゴリ検索");
+			itemsList = itemsRepository.findByChildCategoryId(childCategoryId, pageId,offSetCount);
+			maxPage = itemsRepository.countByChildCategoryId(childCategoryId);
 		}
-		//孫カテゴリのみ
-		else if(name.isEmpty() && grandsonCategoryId != 0 && brand.isEmpty()) {
-//			itemsList = itemsRepository.findByGrandsonCategoryId(grandsonCategoryId);
+		// 親カテゴリのみ
+		else if (name.isEmpty() && parentCategoryId != 0 && childCategoryId == 0 && brand.isEmpty()) {
+			System.out.println("親カテゴリ検索");
+			itemsList = itemsRepository.findByParentCategoryId(parentCategoryId, pageId,offSetCount);
+			maxPage = itemsRepository.countByParentCategoryId(parentCategoryId);
 		}
-//------------------------------------------------------------------------------------------------------
-		//商品名・親カテゴリのみ
-		else if(!(name.isEmpty()) && parentCategoryId != 0 && brand.isEmpty()) {
-//			itemsList = itemsRepository.findByNameParentCategoryId(name,parentCategoryId);
+		// ------------------------------------------------------------------------------------------------------
+		// 商品名・孫カテゴリのみ
+		else if (!(name.isEmpty()) && grandsonCategoryId != 0 && brand.isEmpty()) {
+			System.out.println("商品名・孫カテゴリ検索");
+			itemsList = itemsRepository.findByNameGrandsonCategoryId(name, grandsonCategoryId, pageId,offSetCount);
+			maxPage = itemsRepository.countByNameGrandsonCategoryId(name,grandsonCategoryId);
 		}
-		//商品名・子カテゴリのみ
-		else if(!(name.isEmpty()) && childCategoryId != 0 && brand.isEmpty()) {
-//			itemsList = itemsRepository.findByNameChildCategoryId(name,childCategoryId);
+		// 商品名・子カテゴリのみ
+		else if (!(name.isEmpty()) && childCategoryId != 0 && brand.isEmpty()) {
+			System.out.println("商品名・子カテゴリ検索");
+			itemsList = itemsRepository.findByNameChildCategoryId(name, childCategoryId, pageId,offSetCount);
+			maxPage = itemsRepository.countByNameChildCategoryId(name,childCategoryId);
 		}
-		//商品名・孫カテゴリのみ
-		else if(!(name.isEmpty()) && grandsonCategoryId != 0 && brand.isEmpty()) {
-//			itemsList = itemsRepository.findByNameGrandsonCategoryId(name,grandsonCategoryId);
+		// 商品名・親カテゴリのみ
+		else if (!(name.isEmpty()) && parentCategoryId != 0 && brand.isEmpty()) {
+			System.out.println("商品名・親カテゴリ検索");
+			itemsList = itemsRepository.findByNameParentCategoryId(name, parentCategoryId, pageId,offSetCount);
+			maxPage = itemsRepository.countByNameParentCategoryId(name,parentCategoryId);
 		}
-//---------------------------------------------------------------------------------------------------------
-		//商品名・親カテゴリ・ブランド名
-		else if(!(name.isEmpty()) && parentCategoryId != 0 && childCategoryId == 0 && !(brand.isEmpty())) {
-//			itemsList = itemsRepository.findByNameParentCategoryIdBrand(name, parentCategoryId, brand);
+		//--------------------------------------------------------------------------------------------------------------------------
+		//親カテゴリ・ブランド名
+		else if (name.isEmpty() && parentCategoryId != 0 && !(brand.isEmpty())) {
+			System.out.println("ブランド名・親カテゴリ検索");
+			itemsList = itemsRepository.findByParentCategoryIdBrand(brand, parentCategoryId, pageId,offSetCount);
 		}
-		//商品名・子カテゴリ・ブランド名
-		else if(!(name.isEmpty()) && childCategoryId != 0 && grandsonCategoryId == 0 && !(brand.isEmpty())) {
-//			itemsList = itemsRepository.findByNameChildCategoryIdBrand(name, childCategoryId, brand);
+		//子カテゴリ・ブランド名
+		else if (name.isEmpty() && childCategoryId != 0 && !(brand.isEmpty())) {
+			System.out.println("ブランド名・子カテゴリ検索");
+			itemsList = itemsRepository.findByChildCategoryIdBrand(brand, childCategoryId, pageId,offSetCount);
 		}
-		//商品名・孫カテゴリ・ブランド名
-		else if(!(name.isEmpty()) && grandsonCategoryId != 0 && !(brand.isEmpty())) {
-//			itemsList = itemsRepository.findByNameGrandsonCategoryIdBrand(name, grandsonCategoryId, brand);
-		}else {
-			System.out.println("どれも引っかかってないので全件表示");
+		//孫カテゴリ・ブランド名
+		else if (name.isEmpty() && grandsonCategoryId != 0 && !(brand.isEmpty())) {
+			System.out.println("ブランド名・孫カテゴリ検索");
+			itemsList = itemsRepository.findByGrandsonCategoryIdBrand(brand, grandsonCategoryId, pageId,offSetCount);
 		}
-//---------------------------------------------------------------------------------------------------------
+		// -------------------------------------------------------------------------------------------------------------------------
+		// 商品名・孫カテゴリ・ブランド名
+		else if (!(name.isEmpty()) && grandsonCategoryId != 0 && !(brand.isEmpty())) {
+			System.out.println("商品名・孫カテゴリ・ブランド名検索");
+			itemsList = itemsRepository.findByNameGrandsonCategoryIdBrand(name, grandsonCategoryId, brand, pageId,offSetCount);
+			maxPage = itemsRepository.countByNameGrandsonCategoryIdBrand(name,grandsonCategoryId,brand);	
+		}
+		// 商品名・子カテゴリ・ブランド名
+		else if (!(name.isEmpty()) && childCategoryId != 0 && grandsonCategoryId == 0 && !(brand.isEmpty())) {
+			System.out.println("商品名・子カテゴリ・ブランド名検索");
+			itemsList = itemsRepository.findByNameChildCategoryIdBrand(name, childCategoryId, brand, pageId,offSetCount);
+			maxPage = itemsRepository.countByNameChildCategoryIdBrand(name,childCategoryId,brand);
+		}
+		// 商品名・親カテゴリ・ブランド名
+		else if (!(name.isEmpty()) && parentCategoryId != 0 && childCategoryId == 0 && !(brand.isEmpty())) {
+			System.out.println("商品名・親カテゴリ・ブランド名検索");
+			itemsList = itemsRepository.findByNameParentCategoryIdBrand(name, parentCategoryId, brand, pageId,offSetCount);
+			maxPage = itemsRepository.countByNameParentCategoryIdBrand(name,parentCategoryId,brand);
+		}
+		else {
+		System.out.println("どれも引っかかってないので全件表示");
+		}
+		// ---------------------------------------------------------------------------------------------------------
 		// 検索に引っかからなかった場合
 		if (itemsList == null) {
 			System.out.println("検索に引っかかってない");
 			pageId = Integer.parseInt(CookieController.getCookie(request, "PageID"));
-			itemsList = itemsRepository.loadPage(pageId);
+			itemsList = itemsRepository.loadPage(pageId,offSetCount);
+			maxPage = itemsRepository.countPage();
 			model.addAttribute("message", message);
 		}
-		// Cookie情報の設定 有効期限は1日
-		CookieController.setCookie(request, response, "/", "PageID", pageId.toString(), 1440 * 60);
-		model.addAttribute("currentPageId", pageId);
 		
+		//直前のページ情報の保存・Cookie情報の設定 有効期限は1日
+		CookieController.setCookie(request, response, "/", "PageID", pageId.toString(), 1440 * 60);
+		CookieController.setCookie(request, response, "/", "Name", name, 1440 * 60);
+		CookieController.setCookie(request, response, "/", "ParentCategory", parentCategoryId.toString(), 1440 * 60);
+		CookieController.setCookie(request, response, "/", "ChildCategory", childCategoryId.toString(), 1440 * 60);
+		CookieController.setCookie(request, response, "/", "GrandsonCategory", grandsonCategoryId.toString(), 1440 * 60);
+		CookieController.setCookie(request, response, "/", "Brand", brand, 1440 * 60);
+		
+		model.addAttribute("currentPageId", pageId);
+		model.addAttribute("maxPage",maxPage);
 		return itemsList;
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//-------------------------------------------------------------------------------------------------------------
-//	/**
-//	 * 名前のみで検索.
-//	 * 
-//	 * @param name 商品名
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByName(String name) {
-//		List<Items> itemsList = itemsRepository.findByName(name);
-//		return itemsList;
-//	}
-//	
-//	/**
-//	 *ブランド名のみで検索.
-//	 * @param brand ブランド名
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByBrand(String brand) {
-//		List<Items> itemsList = itemsRepository.findByBrand(brand);
-//		return itemsList;
-//	}
-//	
-//	/**
-//	 * 名前・ブランド名で検索.
-//	 * @param name 商品名
-//	 * @param brand ブランド名
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByNb(String name,String brand) {
-//		List<Items> itemsList = itemsRepository.findByNameBrand(name,brand);
-//		return itemsList;
-//	}
-//	
-//	/**
-//	 * 商品名・親カテゴリID
-//	 * @param name 商品名
-//	 * @param parentCategoryId 親カテゴリID
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByNp(String name,Integer parentCategoryId) {
-//		List<Items> itemsList = itemsRepository.findByNameParentCategoryId(name,parentCategoryId);
-//		return itemsList;
-//	}
-//	
-//	/**
-//	 * 商品名・子カテゴリID
-//	 * @param name 商品名
-//	 * @param childCategoryId 子カテゴリID
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByNc(String name,Integer childCategoryId) {
-//		List<Items> itemsList = itemsRepository.findByNameChildCategoryId(name,childCategoryId);
-//		return itemsList;
-//	}
-//	
-//	/**
-//	 * 商品名・孫カテゴリID
-//	 * @param name 商品名
-//	 * @param grandsonCategoryId 孫カテゴリID
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByNg(String name,Integer grandsonCategoryId) {
-//		List<Items> itemsList = itemsRepository.findByNameGrandsonCategoryId(name,grandsonCategoryId);
-//		return itemsList;
-//	}
-//	
-//	/**
-//	 * 名前・親カテゴリID・ブランド名で検索.
-//	 * 
-//	 * @param name 商品名
-//	 * @param parentCategoryId 親カテゴリID
-//	 * @param brand ブランド名
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByNpb(String name, Integer parentCategoryId, String brand) {
-//		List<Items> itemsList = itemsRepository.findByNameParentCategoryIdBrand(name, parentCategoryId, brand);
-//		return itemsList;
-//	}
-//	
-//	/**
-//	 * 名前・子カテゴリID・ブランド名で検索.
-//	 * @param name 商品名
-//	 * @param childCategoryId 子カテゴリID
-//	 * @param brand ブランド名
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByNcb(String name, Integer childCategoryId, String brand) {
-//		List<Items> itemsList = itemsRepository.findByNameChildCategoryIdBrand(name, childCategoryId, brand);
-//		return itemsList;
-//	}
-//	
-//	/**
-//	 * 名前・孫カテゴリID・ブランド名で検索.
-//	 * @param name 商品名
-//	 * @param grandsonCategoryId 孫カテゴリID
-//	 * @param brand ブランド名
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByNgb(String name, Integer grandsonCategoryId, String brand) {
-//		List<Items> itemsList = itemsRepository.findByNameGrandsonCategoryIdBrand(name, grandsonCategoryId, brand);
-//		return itemsList;
-//	}
-//
-//	/**
-//	 * 親カテゴリIDのみで検索.
-//	 * @param parentCategoryId 親カテゴリID
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByParentCategoryId(Integer parentCategoryId) {
-//		List<Items> itemsList = itemsRepository.findByParentCategoryId(parentCategoryId);
-//		return itemsList;
-//	}
-//	
-//	/**
-//	 * 子カテゴリIDのみで検索.
-//	 * @param childCategoryId 子カテゴリID
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByChildCategoryId(Integer childCategoryId) {
-//		List<Items> itemsList = itemsRepository.findByChildCategoryId(childCategoryId);
-//		return itemsList;
-//	}
-//
-//	/**
-//	 * 孫カテゴリIDのみで検索.
-//	 * @param grandsonCategoryId 孫カテゴリID
-//	 * @return 商品リスト
-//	 */
-//	public List<Items> findByGrandsonCategoryId(Integer grandsonCategoryId) {
-//		List<Items> itemsList = itemsRepository.findByGrandsonCategoryId(grandsonCategoryId);
-//		return itemsList;
-//	}
+	
+	/**リンクからの検索.
+	 * @param model　モデル
+	 * @param parentCategoryId　親カテゴリ
+	 * @param childCategoryId　子カテゴリ
+	 * @param grandsonCategoryId　孫カテゴリ
+	 * @param brand　ブランド名
+	 * @param currentPageId　現在のページID
+	 * @param request　リクエスト
+	 * @param response　レスポンス
+	 * @return　商品一覧
+	 */
+	public List<Items> linkSearch(Model model,
+								@RequestParam(name = "parentCategoryId", required = false) Integer parentCategoryId,
+								@RequestParam(name = "childCategoryId", required = false)Integer childCategoryId,
+								@RequestParam(name = "grandsonCategoryId", required = false)Integer grandsonCategoryId,
+								@RequestParam(name = "brand", required = false)String brand, 
+								@RequestParam(name = "currentPageId", required = false)Integer currentPageId,
+								HttpServletRequest request,HttpServletResponse response) {
+		pageId = paging(currentPageId);
+		offSetCount = offSetCount(pageId);
+		List<Items> itemsList = null;
+		
+		//親カテゴリ検索
+		if(parentCategoryId != null) {
+			itemsList = itemsRepository.findByParentCategoryId(parentCategoryId, currentPageId,offSetCount);
+			maxPage = itemsRepository.countByParentCategoryId(parentCategoryId);
+		//子カテゴリ検索
+		}else if(childCategoryId != null) {
+			itemsList = itemsRepository.findByChildCategoryId(childCategoryId, currentPageId,offSetCount);
+			maxPage = itemsRepository.countByChildCategoryId(childCategoryId);
+		//孫カテゴリ検索
+		}else if(grandsonCategoryId != null) {
+			itemsList = itemsRepository.findByGrandsonCategoryId(grandsonCategoryId, currentPageId,offSetCount);
+			maxPage = itemsRepository.countByGrandsonCategoryId(grandsonCategoryId);
+		//ブランド名検索
+		}else if(brand != null) {
+			itemsList = itemsRepository.findByCompleteBrand(brand, currentPageId,offSetCount);
+			maxPage = itemsRepository.countByBrand(brand);
+		}
+		model.addAttribute("maxPage",maxPage);
+		model.addAttribute("currentPageId", 1);
+		return itemsList;
+	}
 }

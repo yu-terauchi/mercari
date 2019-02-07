@@ -22,10 +22,8 @@ public class CookieController {
 	/**
 	 * cookie情報を取得するメソッド.
 	 * 
-	 * @param request
-	 *            リクエスト
-	 * @param name
-	 *            cookie名
+	 * @param request リクエスト
+	 * @param name cookie名
 	 * @return 取得した結果
 	 */
 	public static String getCookie(HttpServletRequest request, String name) {
@@ -47,29 +45,23 @@ public class CookieController {
 	/**
 	 * cookie情報をセットするメソッド.
 	 * 
-	 * @param request
-	 *            リクエスト
-	 * @param response
-	 *            レスポンス
-	 * @param path
-	 *            パス
-	 * @param name
-	 *            cookie名
-	 * @param value
-	 *            cookieの値
-	 * @param maxAge
-	 *            cookieの有効期限
+	 * @param request リクエスト
+	 * @param response レスポンス
+	 * @param path パス
+	 * @param name cookie名
+	 * @param value cookieの値
+	 * @param maxAge cookieの有効期限
 	 */
-	public static void setCookie(HttpServletRequest request, HttpServletResponse response, String path, String PageID,String currentPageId, int maxAge) {
+	public static void setCookie(HttpServletRequest request, HttpServletResponse response, 
+								String path, String name,String value,int maxAge) {
 		// cookie情報のセット
-		Cookie cookie = new Cookie(PageID, currentPageId);
+		Cookie cookie = new Cookie(name, value);
 		cookie.setMaxAge(maxAge);
 		cookie.setPath(path);
 		// httpsで稼働している環境であればCookieが暗号化されるようSecure属性をつける
 		if ("https".equals(request.getScheme())) {
 			cookie.setSecure(true);
 		}
-
 		response.addCookie(cookie);
 	}
 }

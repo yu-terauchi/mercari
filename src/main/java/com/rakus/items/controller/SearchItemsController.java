@@ -9,15 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.rakus.items.domain.Items;
-import com.rakus.items.form.ItemsForm;
 import com.rakus.items.service.CategoryService;
-import com.rakus.items.service.ItemsService;
 import com.rakus.items.service.SearchItemsService;
 
 /**
@@ -33,29 +29,27 @@ public class SearchItemsController {
 
 	@Autowired
 	private SearchItemsService searchItemsService;
-	@Autowired
-	private ItemsService itemsService;
+
 	@Autowired
 	private CategoryService categoryService;
 
-	@ModelAttribute
-	public ItemsForm setUpItemsForm() {
-		return new ItemsForm();
-	}
-
 	/**
-	 * 検索された商品情報を読み込み商品一覧ページへフォワード.
-	 * 
-	 * @param model
-	 *            モデル
-	 * @param name
-	 *            名前
+	 * フォームから検索された商品情報を読み込み商品一覧ページを表示.
+	 * @param model モデル
+	 * @param name 名前
 	 * @return 商品一覧ページ
 	 */
 	@RequestMapping("/toSearchItems")
-	public String SearchItems(Model model, ItemsForm form,Integer currentPageId,HttpServletRequest request,HttpServletResponse response) {
-		System.out.println(form);
-		List<Items> itemsList = searchItemsService.findItems(model, form,currentPageId, request,response);
+	public String searchItems(Model model,	
+							@RequestParam(name = "name", required = false) String name,
+							@RequestParam(name = "parentCategoryId", required = false) Integer parentCategoryId,
+							@RequestParam(name = "childCategoryId", required = false)Integer childCategoryId,
+							@RequestParam(name = "grandsonCategoryId", required = false)Integer grandsonCategoryId,
+							@RequestParam(name = "brand", required = false)String brand, 
+							@RequestParam(name = "currentPageId", required = false)Integer currentPageId,
+							HttpServletRequest request,HttpServletResponse response) {
+		List<Items> itemsList = searchItemsService.findItems(model, name, parentCategoryId, childCategoryId,
+															grandsonCategoryId, brand, currentPageId, request, response);
 		categoryService.loadParent(model);
 		categoryService.loadChild(model);
 		categoryService.loadGrandson(model);
@@ -63,4 +57,41 @@ public class SearchItemsController {
 		model.addAttribute("itemsList", itemsList);
 		return "itemList";
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	/**
+	 * リンクから検索された商品情報を読み込み商品一覧ページを表示.
+	 * @param model　モデル
+	 * @param name　商品名
+	 * @param parentCategoryId　親カテゴリ
+	 * @param childCategoryId　子カテゴリ
+	 * @param grandsonCategoryId　孫カテゴリ
+	 * @param brand　ブランド名
+	 * @param currentPageId　現在のページID
+	 * @param request　リクエスト
+	 * @param response　レスポンス
+	 * @return　商品一覧
+	 */
+	@RequestMapping("/toLinkSearch")
+	public String linkSearch(Model model,
+							@RequestParam(name = "parentCategoryId",	required = false)	Integer parentCategoryId,
+							@RequestParam(name = "childCategoryId", 	required = false)	Integer childCategoryId,
+							@RequestParam(name = "grandsonCategoryId", 	required = false)	Integer grandsonCategoryId,
+							@RequestParam(name = "brand", 				required = false)	String brand, 
+							@RequestParam(name = "currentPageId", 		required = false)	Integer currentPageId,
+							HttpServletRequest request,HttpServletResponse response) {
+		List<Items> itemsList = searchItemsService.linkSearch(model, 
+															  parentCategoryId,
+															  childCategoryId,
+															  grandsonCategoryId,
+															  brand,
+															  currentPageId,
+															  request, response );
+		categoryService.loadParent(model);
+		categoryService.loadChild(model);
+		categoryService.loadGrandson(model);
+		model.addAttribute("itemsList", itemsList);
+		return "itemList";
+	}
+
 }

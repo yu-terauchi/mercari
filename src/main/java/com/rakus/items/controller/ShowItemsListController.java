@@ -46,7 +46,14 @@ public class ShowItemsListController {
 	 */
 	@RequestMapping("/toItems")
 	public String toItemsList(Model model, Integer currentPageId, HttpServletRequest request,HttpServletResponse response) {
-		List<Items> itemsList = itemsService.loadPage(model, currentPageId, request, response);
+		//cookieの値を初期化、またはcookieに保存してる検索情報をリセット(ページIDは維持)
+		CookieController.setCookie(request, response, "/", "PageID","1", 1440 * 60);
+		CookieController.setCookie(request, response, "/", "Name", "", 1440 * 60);
+		CookieController.setCookie(request, response, "/", "ParentCategory","0",1440 * 60);
+		CookieController.setCookie(request, response, "/", "ChildCategory","0", 1440 * 60);
+		CookieController.setCookie(request, response, "/", "GrandsonCategory", "0", 1440 * 60);
+		CookieController.setCookie(request, response, "/", "Brand", "", 1440 * 60);
+		List<Items> itemsList = itemsService.loadPage(model, currentPageId,request, response);
 		//検索のカテゴリプルダウン用の各カテゴリ情報を取得
 		categoryService.loadParent(model);
 		categoryService.loadChild(model);
@@ -64,9 +71,11 @@ public class ShowItemsListController {
 	 */
 	@RequestMapping("/backItems")
 	public String backItemsList(Model model, HttpServletRequest request) {
-		// 保存してるcookie情報の取り出し
-		Integer pageId = Integer.parseInt(CookieController.getCookie(request, "PageID"));
-		List<Items> itemsList = itemsService.backPage(pageId);
+		List<Items> itemsList = itemsService.backPage(model,request);
+		//検索のカテゴリプルダウン用の各カテゴリ情報を取得
+		categoryService.loadParent(model);
+		categoryService.loadChild(model);
+		categoryService.loadGrandson(model);
 		model.addAttribute("itemsList", itemsList);
 		return "itemList";
 	}

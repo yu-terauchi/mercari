@@ -7,29 +7,33 @@ package com.rakus.items.domain;
  *
  */
 public class Users {
-	/**ID*/
+	/** ID */
 	private Integer id;
-	/**ユーザ名*/
+	/** ユーザ名 */
 	private String name;
-	/**パスワード*/
+	/** パスワード */
 	private String password;
-	/**権限*/
+	/** Eメールアドレス */
+	private String email;
+	/** 権限 */
 	private String authority;
 
 	public Users() {
 	}
 
-	public Users(Integer id, String name, String password, String authority) {
+	public Users(Integer id, String name, String password, String email, String authority) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.password = password;
+		this.email = email;
 		this.authority = authority;
 	}
 
 	@Override
 	public String toString() {
-		return "Users [id=" + id + ", name=" + name + ", password=" + password + ", authority=" + authority + "]";
+		return "Users [id=" + id + ", name=" + name + ", password=" + password + ", email=" + email + ", authority="
+				+ authority + "]";
 	}
 
 	public Integer getId() {
@@ -54,6 +58,14 @@ public class Users {
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
 	}
 
 	public String getAuthority() {

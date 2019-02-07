@@ -47,11 +47,14 @@
 		<div id="navbar" class="collapse navbar-collapse">
 			<div>
 				<ul class="nav navbar-nav navbar-right">
-					<li><a id="logout" href="./login.html">Logout&nbsp;<i
+					<li><a id="logout" href="${pageContext.request.contextPath}/logout">Logout&nbsp;<i
 							class="fa fa-power-off"></i></a></li>
 				</ul>
+				<sec:authorize access="hasRole('ROLE_MEMBER') and isAuthenticated()">
+					<sec:authentication var="userName" property="principal.user.name" />
+				</sec:authorize>&nbsp;&nbsp;
 				<p class="navbar-text navbar-right">
-					<span id="loginName">user: userName</span>
+					<span id="loginName">user: <c:out value="${userName}"/></span>
 				</p>
 			</div>
 		</div>
@@ -79,7 +82,7 @@
 					</tr>
 					<tr>
 						<th>category</th>
-							<td><c:out value="${grandson.nameAll}"/></td>
+							<td><c:out value="${itemDetail.grandson.nameAll}"/></td>
 					</tr>
 					<tr>
 						<th>brand</th>
@@ -95,7 +98,7 @@
 					</tr>
 				</tbody>
 			</table>
-			<a type="button" class="btn btn-default" href="./edit.html"><i
+			<a type="button" class="btn btn-default" href="${pageContext.request.contextPath}/editItem/toEdit?id=<c:out value="${itemDetail.id}"/>"><i
 				class="fa fa-pencil-square-o"></i>&nbsp;edit</a>
 		</div>
 	</div>

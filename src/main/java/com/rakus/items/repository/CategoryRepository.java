@@ -1,12 +1,8 @@
 package com.rakus.items.repository;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -15,7 +11,6 @@ import org.springframework.stereotype.Repository;
 
 import com.rakus.items.domain.Category;
 import com.rakus.items.domain.CategoryFamily;
-import com.rakus.items.domain.Original;
 
 /**
  * 商品情報を読み込むリポジトリ.
@@ -26,14 +21,14 @@ import com.rakus.items.domain.Original;
 @Repository
 public class CategoryRepository {
 
-	/**
-	 * オリジナルテーブルからカテゴリ情報を取得する際のマッパー.
-	 */
-	private final static RowMapper<Original> ORIGINAL_ROW_MAPPER = (rs, i) -> {
-		Original original = new Original();
-		original.setCategoryName(rs.getString("category_name"));
-		return original;
-	};
+//	/**
+//	 * オリジナルテーブルからカテゴリ情報を取得する際のマッパー.
+//	 */
+//	private final static RowMapper<Original> ORIGINAL_ROW_MAPPER = (rs, i) -> {
+//		Original original = new Original();
+//		original.setCategoryName(rs.getString("category_name"));
+//		return original;
+//	};
 	private final static RowMapper<Category> CATEGORY_ROW_MAPPER = (rs, i) -> {
 		Category category = new Category();
 		category.setId(rs.getInt("id"));
@@ -65,16 +60,16 @@ public class CategoryRepository {
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
-	/**
-	 * オリジナルテーブルからカテゴリ情報を取得.
-	 * 
-	 * @return カテゴリ情報一覧
-	 */
-	public List<Original> findCategoryAll() {
-		String sql = "SELECT id,category_name FROM original ORDER BY id;";
-		List<Original> originalList = jdbcTemplate.query(sql, ORIGINAL_ROW_MAPPER);
-		return originalList;
-	}
+//	/**
+//	 * オリジナルテーブルからカテゴリ情報を取得.
+//	 * 
+//	 * @return カテゴリ情報一覧
+//	 */
+//	public List<Original> findCategoryAll() {
+//		String sql = "SELECT id,category_name FROM original ORDER BY id;";
+//		List<Original> originalList = jdbcTemplate.query(sql, ORIGINAL_ROW_MAPPER);
+//		return originalList;
+//	}
 
 	/**
 	 * 一件のカテゴリ情報を取得する.
@@ -111,7 +106,6 @@ public class CategoryRepository {
 	 * @return 子カテゴリ情報一覧
 	 */
 	public List<Category> loadChild() {
-		//DISTINCT on () で特定のカラムの重複のみを排除することができる
 		String sql = "SELECT id,parent_id,category_name  " 
 					+ "FROM category " 
 					+ "WHERE parent_id is not NULL "
@@ -127,7 +121,6 @@ public class CategoryRepository {
 	 * @return 孫カテゴリ情報一覧
 	 */
 	public List<Category> loadGrandson() {
-		//DISTINCT on () で特定のカラムの重複のみを排除することができる
 		String sql = "SELECT id , parent_id,category_name "
 				+ "FROM category "
 				+ "WHERE parent_id is not NULL "
@@ -176,7 +169,7 @@ public class CategoryRepository {
 	 * @return カテゴリー
 	 */
 	public Category findGrandsonByItemsCategoryId(Integer categoryId) {
-		String sql = "SELECT * FROM category WHERE category_id = :categoryId  ORDER BY id;";
+		String sql = "SELECT * FROM category WHERE id = :categoryId  ORDER BY id;";
 		SqlParameterSource param = new MapSqlParameterSource().addValue("categoryId", categoryId);
 			Category grandson = jdbcTemplate.queryForObject(sql, param, CATEGORY_ROW_MAPPER);
 			return grandson;
